@@ -1,0 +1,4 @@
+aiogram~=3.4
+abacusai~=1.4
+python-dotenv
+backoff

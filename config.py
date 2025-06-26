@@ -1,6 +1,18 @@
-import os
+from dataclasses import dataclass
 from dotenv import load_dotenv
 
 load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-DEEPSEEK_KEY = "sk-96071464862b4f1ca04503191c6af1e4"
+
+@dataclass
+class Config:
+    deploy_token: str
+    deploy_id: str
+    tg_token: str
+
+def load() -> Config:
+    import os
+    return Config(
+        deploy_token=os.getenv("ABACUS_DEPLOYMENT_TOKEN"),
+        deploy_id=os.getenv("ABACUS_DEPLOYMENT_ID"),
+        tg_token=os.getenv("TG_TOKEN"),
+    )
