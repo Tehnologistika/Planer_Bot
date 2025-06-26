@@ -28,6 +28,37 @@ import database  # TinyDB helper functions
 import ai_service  # DeepSeek wrapper module
 from database import close_db
 from database import get_task
+from config import load
+from planner.abacus_client import ask_rocky
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import Command
+from aiogram import F
+
+cfg = load()
+bot = Bot(token=cfg.tg_token)
+dp = Dispatcher()
+
+# --- Simple Rocky handlers ---
+@dp.message(Command("add"))
+async def handle_add(message: types.Message) -> None:
+    query = message.text.split(maxsplit=1)
+    text = query[1] if len(query) > 1 else ""
+    resp = await ask_rocky(text)
+    await message.reply(resp)
+
+
+@dp.message(Command("free"))
+async def handle_free(message: types.Message) -> None:
+    query = message.text.split(maxsplit=1)
+    text = query[1] if len(query) > 1 else ""
+    resp = await ask_rocky(text)
+    await message.reply(resp)
+
+
+@dp.message()
+async def fallback(message: types.Message) -> None:
+    if message.text:
+        await message.answer(await ask_rocky(message.text))
 
 from zoneinfo import ZoneInfo  # Python 3.9+
 
@@ -1684,4 +1715,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    dp.run_polling(bot)
