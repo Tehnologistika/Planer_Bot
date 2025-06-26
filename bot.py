@@ -1672,67 +1672,13 @@ def main(return_app: bool = False) -> Application | None:
         jq.set_application(application)
         application.job_queue = jq
 
-    # Slash‑команды
-    # application.add_handler(CommandHandler("start", cmd_start))
-    application.add_handler(CommandHandler("today", show_today_menu))
-    application.add_handler(CommandHandler("week", show_week_menu))
-    application.add_handler(CommandHandler("month", show_month_menu))
-    application.add_handler(CommandHandler("okr", show_goal_menu))
-    application.add_handler(CommandHandler("inbox", show_inbox_menu))
-    application.add_handler(CommandHandler("stats", show_stats_menu))
-    application.add_handler(CommandHandler("settings", show_settings_menu))
-    application.add_handler(CommandHandler("ai", cmd_ai))
-    # application.add_handler(CommandHandler("add", add_cmd))
-    # application.add_handler(CommandHandler("free", free_cmd))
-    # --- Временная команда для полного сброса пользователя ---
-    application.add_handler(CommandHandler("reset_me", cmd_reset_me))
-    # --- Жизненный план/стратегия ---
+    # Slash commands
+    application.add_handler(CommandHandler("add", add_cmd))
+    application.add_handler(CommandHandler("free", free_cmd))
+
+    # Text to Rocky
     application.add_handler(
-        ConversationHandler(
-            entry_points=[CommandHandler("lifeplan", cmd_lifeplan)],
-            states={
-                LIFEPLAN_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, lifeplan_router)],
-                "lifeplan_confirm": [MessageHandler(filters.TEXT & ~filters.COMMAND, lifeplan_confirm)],
-                "categories_state": [MessageHandler(filters.TEXT & ~filters.COMMAND, categories_router)],
-            },
-            fallbacks=[CommandHandler("cancel", lambda u, c: u.message.reply_text("Диалог отменён."))],
-            name="lifeplan_conv",
-            persistent=False,
-        )
-    )
-
-    # Reply‑кнопки
-    # application.add_handler(MessageHandler(filters.Regex("^📋 Сегодня$"), show_today_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^🗓 Неделя$"), show_week_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^📆 Месяц$"), show_month_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^🎯 Цели$"), show_goal_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^🔔 Инбокс$"), show_inbox_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^📊 Статистика$"), show_stats_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^⚙️ Настройки$"), show_settings_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^⬅️ В меню$"), return_to_main))
-    # application.add_handler(MessageHandler(filters.Regex("^💼 Меню$"), show_full_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^⬅️ Свернуть$"), collapse_menu))
-    # application.add_handler(MessageHandler(filters.Regex("^🤖 Секретарь$"), cmd_ai))
-
-    # Inline callback handler
-    # application.add_handler(CallbackQueryHandler(choose_category_router, pattern="^choose_cat_"))
-    # application.add_handler(CallbackQueryHandler(inline_router))
-
-    # Voice handler
-    application.add_handler(MessageHandler(filters.VOICE, voice_router))
-
-    # Text input router
-    application.add_handler(
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            text_input_router,
-        )
-    )
-    application.add_handler(
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            echo_to_rocky,
-        )
+        MessageHandler(filters.TEXT & ~filters.COMMAND, echo_to_rocky)
     )
 
     logger.info("Bot started…")
