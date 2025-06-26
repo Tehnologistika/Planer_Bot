@@ -3,3 +3,5 @@ abacusai~=1.4
 python-dotenv
 backoff
 python-telegram-bot[job-queue]
+
+python-telegram-bot[job-queue]

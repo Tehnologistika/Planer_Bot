@@ -10,6 +10,9 @@ bot.py  •  Telegram‑бот «Личный планировщик»
 """
 
 import logging
+
+from config import load
+cfg = load()
 import stt_vosk
 from datetime import date, datetime
 from datetime import timedelta
@@ -26,6 +29,7 @@ def get_objective(obj_id: int):
 
 import database  # TinyDB helper functions
 import ai_service  # DeepSeek wrapper module
+from planner.abacus_client import ask_rocky
 from database import close_db
 from database import get_task
 from config import load
@@ -373,6 +377,41 @@ def progress_dot(p: int) -> str:
     if p < 70:
         return "🟨"
     return "🟩"
+
+# ---------- Rocky integration (Abacus) ----------
+async def cmd_add_rocky(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Delegate /add text to Abacus Rocky agent."""
+    text = update.message.text.partition(" ")[2].strip()
+    if not text:
+        await update.message.reply_text("⚠️ Использование: /add <текст задачи или запрос>")
+        return
+    try:
+        resp = await ask_rocky(text)
+        await update.message.reply_text(str(resp))
+    except Exception as e:
+        logger.exception("ask_rocky failed")
+        await update.message.reply_text(f"Ошибка Rocky: {e}")
+
+async def cmd_free_rocky(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Delegate /free query to Rocky agent."""
+    query = update.message.text.partition(" ")[2].strip()
+    if not query:
+        query = "свободное время"
+    try:
+        resp = await ask_rocky(query)
+        await update.message.reply_text(str(resp))
+    except Exception as e:
+        logger.exception("ask_rocky failed")
+        await update.message.reply_text(f"Ошибка Rocky: {e}")
+
+async def echo_to_rocky(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Fallback: any plain text not handled elsewhere → Rocky."""
+    try:
+        resp = await ask_rocky(update.message.text)
+        await update.message.reply_text(str(resp))
+    except Exception as e:
+        logger.exception("ask_rocky failed")
+        await update.message.reply_text(f"Ошибка Rocky: {e}")
 
 # --- Helper: find matching tasks for AI ---
 def find_matching_tasks(uid: int, query: str, days_ahead: int = 30):
@@ -1661,20 +1700,50 @@ async def on_shutdown(application: Application) -> None:
 def main(return_app: bool = False) -> Application | None:
     application: Application = (
         ApplicationBuilder()
-        .token(config.BOT_TOKEN)
+        .token(cfg.tg_token)
         .post_shutdown(on_shutdown)
         .build()
     )
 
-    from telegram.ext import JobQueue
-    if application.job_queue is None:
-        jq = JobQueue()
-        jq.set_application(application)
-        application.job_queue = jq
+    # Slash‑команды
+    application.add_handler(CommandHandler("start", cmd_start))
+    application.add_handler(CommandHandler("today", show_today_menu))
+    application.add_handler(CommandHandler("week", show_week_menu))
+    application.add_handler(CommandHandler("month", show_month_menu))
+    application.add_handler(CommandHandler("okr", show_goal_menu))
+    application.add_handler(CommandHandler("inbox", show_inbox_menu))
+    application.add_handler(CommandHandler("stats", show_stats_menu))
+    application.add_handler(CommandHandler("settings", show_settings_menu))
+    application.add_handler(CommandHandler("ai", cmd_ai))
+    # --- Временная команда для полного сброса пользователя ---
+    application.add_handler(CommandHandler("reset_me", cmd_reset_me))
+    # --- Жизненный план/стратегия ---
+    application.add_handler(
+        ConversationHandler(
+            entry_points=[CommandHandler("lifeplan", cmd_lifeplan)],
+            states={
+                LIFEPLAN_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, lifeplan_router)],
+                "lifeplan_confirm": [MessageHandler(filters.TEXT & ~filters.COMMAND, lifeplan_confirm)],
+                "categories_state": [MessageHandler(filters.TEXT & ~filters.COMMAND, categories_router)],
+            },
+            fallbacks=[CommandHandler("cancel", lambda u, c: u.message.reply_text("Диалог отменён."))],
+            name="lifeplan_conv",
+            persistent=False,
+        )
+    )
 
-    # Slash commands
-    application.add_handler(CommandHandler("add", add_cmd))
-    application.add_handler(CommandHandler("free", free_cmd))
+    # Reply‑кнопки
+    application.add_handler(MessageHandler(filters.Regex("^📋 Сегодня$"), show_today_menu))
+    application.add_handler(MessageHandler(filters.Regex("^🗓 Неделя$"), show_week_menu))
+    application.add_handler(MessageHandler(filters.Regex("^📆 Месяц$"), show_month_menu))
+    application.add_handler(MessageHandler(filters.Regex("^🎯 Цели$"), show_goal_menu))
+    application.add_handler(MessageHandler(filters.Regex("^🔔 Инбокс$"), show_inbox_menu))
+    application.add_handler(MessageHandler(filters.Regex("^📊 Статистика$"), show_stats_menu))
+    application.add_handler(MessageHandler(filters.Regex("^⚙️ Настройки$"), show_settings_menu))
+    application.add_handler(MessageHandler(filters.Regex("^⬅️ В меню$"), return_to_main))
+    application.add_handler(MessageHandler(filters.Regex("^💼 Меню$"), show_full_menu))
+    application.add_handler(MessageHandler(filters.Regex("^⬅️ Свернуть$"), collapse_menu))
+    application.add_handler(MessageHandler(filters.Regex("^🤖 Секретарь$"), cmd_ai))
 
     # Text to Rocky
     application.add_handler(
@@ -1682,7 +1751,7 @@ def main(return_app: bool = False) -> Application | None:
     )
 
     logger.info("Bot started…")
-        # --- восстановить ежедневные напоминания Инбокса после рестарта ---
+    # --- восстановить ежедневные напоминания Инбокса после рестарта ---
     from datetime import time as _t
 
     for uid, chat in database.all_known_chats():
