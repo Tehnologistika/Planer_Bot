@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install --no-cache-dir -r requirements.txt || true
+      - name: Ensure python-dotenv
+        run: pip install --no-cache-dir python-dotenv
+      - name: Run linters
+        run: echo "Placeholder for linting"
