@@ -39,26 +39,26 @@ bot = Bot(token=cfg.tg_token)
 dp = Dispatcher()
 
 # --- Simple Rocky handlers ---
-@dp.message(Command("add"))
-async def handle_add(message: types.Message) -> None:
-    query = message.text.split(maxsplit=1)
-    text = query[1] if len(query) > 1 else ""
-    resp = await ask_rocky(text)
-    await message.reply(resp)
+# @dp.message(Command("add"))
+# async def handle_add(message: types.Message) -> None:
+#     query = message.text.split(maxsplit=1)
+#     text = query[1] if len(query) > 1 else ""
+#     resp = await ask_rocky(text)
+#     await message.reply(resp)
 
 
-@dp.message(Command("free"))
-async def handle_free(message: types.Message) -> None:
-    query = message.text.split(maxsplit=1)
-    text = query[1] if len(query) > 1 else ""
-    resp = await ask_rocky(text)
-    await message.reply(resp)
+# @dp.message(Command("free"))
+# async def handle_free(message: types.Message) -> None:
+#     query = message.text.split(maxsplit=1)
+#     text = query[1] if len(query) > 1 else ""
+#     resp = await ask_rocky(text)
+#     await message.reply(resp)
 
 
-@dp.message()
-async def fallback(message: types.Message) -> None:
-    if message.text:
-        await message.answer(await ask_rocky(message.text))
+# @dp.message()
+# async def fallback(message: types.Message) -> None:
+#     if message.text:
+#         await message.answer(await ask_rocky(message.text))
 
 from zoneinfo import ZoneInfo  # Python 3.9+
 
@@ -517,6 +517,29 @@ async def cmd_ai(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "🤖 Что спросить ассистента? Отправь текст одним сообщением."
     )
+
+
+async def add_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Relay /add text to Rocky."""
+    query = update.message.text.split(maxsplit=1)
+    text = query[1] if len(query) > 1 else ""
+    resp = await ask_rocky(text)
+    await update.message.reply_text(resp)
+
+
+async def free_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Relay /free text to Rocky."""
+    query = update.message.text.split(maxsplit=1)
+    text = query[1] if len(query) > 1 else ""
+    resp = await ask_rocky(text)
+    await update.message.reply_text(resp)
+
+
+async def echo_to_rocky(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send any text message to Rocky and echo the reply."""
+    if update.message and update.message.text:
+        resp = await ask_rocky(update.message.text)
+        await update.message.reply_text(resp)
 
 # ---------- Базовые хендлеры ---------- #
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1659,6 +1682,8 @@ def main() -> None:
     application.add_handler(CommandHandler("stats", show_stats_menu))
     application.add_handler(CommandHandler("settings", show_settings_menu))
     application.add_handler(CommandHandler("ai", cmd_ai))
+    application.add_handler(CommandHandler("add", add_cmd))
+    application.add_handler(CommandHandler("free", free_cmd))
     # --- Временная команда для полного сброса пользователя ---
     application.add_handler(CommandHandler("reset_me", cmd_reset_me))
     # --- Жизненный план/стратегия ---
@@ -1701,6 +1726,12 @@ def main() -> None:
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
             text_input_router,
+        )
+    )
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            echo_to_rocky,
         )
     )
 
