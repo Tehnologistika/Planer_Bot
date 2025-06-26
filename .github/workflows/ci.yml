@@ -1,0 +1,23 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install -r requirements.txt
+      - run: python -m pip check
+      - name: Import smoke-test
+        run: |
+          python - <<'PY'
+          from config import load
+          import planner.abacus_client, bot
+          print("Imports OK")
+          PY
+        env:
+          ABACUS_DEPLOYMENT_TOKEN: ${{ secrets.ABACUS_DEPLOYMENT_TOKEN }}
+          ABACUS_DEPLOYMENT_ID:   ${{ secrets.ABACUS_DEPLOYMENT_ID }}
+          TG_TOKEN:               ${{ secrets.TG_TOKEN }}
