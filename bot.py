@@ -1643,6 +1643,12 @@ def main() -> None:
         .build()
     )
 
+    from telegram.ext import JobQueue
+    if application.job_queue is None:
+        jq = JobQueue()
+        jq.set_application(application)
+        application.job_queue = jq
+
     # Slash‑команды
     application.add_handler(CommandHandler("start", cmd_start))
     application.add_handler(CommandHandler("today", show_today_menu))
