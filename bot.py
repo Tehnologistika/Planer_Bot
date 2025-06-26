@@ -1658,7 +1658,7 @@ async def on_shutdown(application: Application) -> None:
     logger.info("Database closed and cache flushed.")
 
 # ---------- main ---------- #
-def main() -> None:
+def main(return_app: bool = False) -> Application | None:
     application: Application = (
         ApplicationBuilder()
         .token(config.BOT_TOKEN)
@@ -1673,7 +1673,7 @@ def main() -> None:
         application.job_queue = jq
 
     # Slash‑команды
-    application.add_handler(CommandHandler("start", cmd_start))
+    # application.add_handler(CommandHandler("start", cmd_start))
     application.add_handler(CommandHandler("today", show_today_menu))
     application.add_handler(CommandHandler("week", show_week_menu))
     application.add_handler(CommandHandler("month", show_month_menu))
@@ -1682,8 +1682,8 @@ def main() -> None:
     application.add_handler(CommandHandler("stats", show_stats_menu))
     application.add_handler(CommandHandler("settings", show_settings_menu))
     application.add_handler(CommandHandler("ai", cmd_ai))
-    application.add_handler(CommandHandler("add", add_cmd))
-    application.add_handler(CommandHandler("free", free_cmd))
+    # application.add_handler(CommandHandler("add", add_cmd))
+    # application.add_handler(CommandHandler("free", free_cmd))
     # --- Временная команда для полного сброса пользователя ---
     application.add_handler(CommandHandler("reset_me", cmd_reset_me))
     # --- Жизненный план/стратегия ---
@@ -1702,21 +1702,21 @@ def main() -> None:
     )
 
     # Reply‑кнопки
-    application.add_handler(MessageHandler(filters.Regex("^📋 Сегодня$"), show_today_menu))
-    application.add_handler(MessageHandler(filters.Regex("^🗓 Неделя$"), show_week_menu))
-    application.add_handler(MessageHandler(filters.Regex("^📆 Месяц$"), show_month_menu))
-    application.add_handler(MessageHandler(filters.Regex("^🎯 Цели$"), show_goal_menu))
-    application.add_handler(MessageHandler(filters.Regex("^🔔 Инбокс$"), show_inbox_menu))
-    application.add_handler(MessageHandler(filters.Regex("^📊 Статистика$"), show_stats_menu))
-    application.add_handler(MessageHandler(filters.Regex("^⚙️ Настройки$"), show_settings_menu))
-    application.add_handler(MessageHandler(filters.Regex("^⬅️ В меню$"), return_to_main))
-    application.add_handler(MessageHandler(filters.Regex("^💼 Меню$"), show_full_menu))
-    application.add_handler(MessageHandler(filters.Regex("^⬅️ Свернуть$"), collapse_menu))
-    application.add_handler(MessageHandler(filters.Regex("^🤖 Секретарь$"), cmd_ai))
+    # application.add_handler(MessageHandler(filters.Regex("^📋 Сегодня$"), show_today_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^🗓 Неделя$"), show_week_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^📆 Месяц$"), show_month_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^🎯 Цели$"), show_goal_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^🔔 Инбокс$"), show_inbox_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^📊 Статистика$"), show_stats_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^⚙️ Настройки$"), show_settings_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^⬅️ В меню$"), return_to_main))
+    # application.add_handler(MessageHandler(filters.Regex("^💼 Меню$"), show_full_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^⬅️ Свернуть$"), collapse_menu))
+    # application.add_handler(MessageHandler(filters.Regex("^🤖 Секретарь$"), cmd_ai))
 
     # Inline callback handler
-    application.add_handler(CallbackQueryHandler(choose_category_router, pattern="^choose_cat_"))
-    application.add_handler(CallbackQueryHandler(inline_router))
+    # application.add_handler(CallbackQueryHandler(choose_category_router, pattern="^choose_cat_"))
+    # application.add_handler(CallbackQueryHandler(inline_router))
 
     # Voice handler
     application.add_handler(MessageHandler(filters.VOICE, voice_router))
@@ -1748,8 +1748,10 @@ def main() -> None:
                 data={"uid": uid, "chat_id": chat},
                 name=name,
             )
+    if return_app:
+        return application
     application.run_polling()
 
 
 if __name__ == "__main__":
-    dp.run_polling(bot)
+    main()
