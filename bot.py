@@ -12,7 +12,6 @@ bot.py  •  Telegram‑бот «Личный планировщик»
 import logging
 
 from config import load
-cfg = load()
 import stt_vosk
 from datetime import date, datetime
 from datetime import timedelta
@@ -32,11 +31,10 @@ import ai_service  # DeepSeek wrapper module
 from planner.abacus_client import ask_rocky
 from database import close_db
 from database import get_task
-from config import load
-from planner.abacus_client import ask_rocky
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram import F
+
 
 cfg = load()
 bot = Bot(token=cfg.tg_token)

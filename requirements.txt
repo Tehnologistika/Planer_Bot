@@ -4,4 +4,3 @@ python-dotenv
 backoff
 python-telegram-bot[job-queue]
 
-python-telegram-bot[job-queue]
